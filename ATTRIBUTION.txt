@@ -1,0 +1,12 @@
+GrainAD Paddy Inspection
+
+This project builds on GrainNet/GrainBrain by the original GrainBrain authors.
+Source: https://github.com/GrainNet/GrainBrain
+Paper: GrainBrain: Multiview Identification and Stratification of Defective Grain Kernels
+DOI: 10.1109/TII.2025.3528555
+Upstream commit: c8ffa2039596e3212cf9becf3731064e5a7d3c81
+
+Local work includes implementation corrections, laptop training, resumable checkpoints,
+evaluation, calibrated top-5% patch averaging and a portable demonstration.
+Original method and dataset credit remain with their authors.
+Dataset terms: https://grainnet.github.io/GrainBrain.html

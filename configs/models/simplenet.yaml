@@ -1,0 +1,25 @@
+layers_to_extract_from: ['layer2', 'layer3']
+pretrain_embed_dimension: 1536
+target_embed_dimension: 1536
+patchsize: 3
+embedding_size: 256
+meta_epochs: 50
+gan_epochs: 1
+dsc_layers: 2
+dsc_hidden: 1024
+noise_std: 0.015
+dsc_margin: 0.5
+dsc_lr: 0.0002
+pre_proj: 1
+device: "cuda"
+#input_shape: [3, 224, 224]
+input_shape: [3, 224, 1120]
+add_ica: true
+five_split: true
+add_scl: True
+ablation: 0       # 0: alll; 1/2/3: ablation
+ica_path: ./results/ica/models/ica.pth
+visualization: False
+visual_num: 100
+scl_weight: 0.5
+bce_weight: 0.5

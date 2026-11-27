@@ -1,0 +1,25 @@
+defaults:
+  - models: simplenet
+
+backbone_name: wideresnet50
+batch_size: 8
+#resize: [224, 224]
+#imagesize: [224, 224]
+resize: [224, 1120]
+imagesize: [224, 1120]
+num_workers: 0
+mixed_precision: 'no'
+gradient_accumulation_steps: 1
+save_dir: results/grain_soybean_sync_scl
+test: false
+#train_data_dir: /mnt/lpai-dione/ssai/cvg/team/share_datasets/Grain/tii
+#anomaly_source_path: /mnt/lpai-dione/ssai/cvg/team/didonglin/hjj/code/diffusionad/data/dtd/images
+train_data_dir: ./datasets/grain
+anomaly_source_path: ./datasets/dtd/images
+with_mask: false
+classname: 'soybean'
+padding: 0
+save_segmentation_images: True
+five_split: true
+ablation: 0       # 0: alll; 1/2/3: ablation
+ica_path: ./results/ica/models/ica.pth

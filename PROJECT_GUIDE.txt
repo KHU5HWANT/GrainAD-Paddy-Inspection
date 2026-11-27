@@ -1,0 +1,40 @@
+GRAINAD PADDY INSPECTION
+=======================
+
+PRESENT
+Presentation/GrainAD_Results.pdf - latest presentation
+outputs/demo_top5/summary.png - prediction gallery
+report/main.tex - detailed implementation report
+
+RUN
+Use RUN_DEMO.cmd after SETUP_WINDOWS.cmd on a new laptop.
+On the training laptop, run:
+.venv312\Scripts\python.exe scripts\demo_grainad.py
+
+MODEL
+Current demo averages the top 5% of patches using cutoff -3.505190372467041.
+Retrospective audit: AUROC 94.40%, accuracy 85.80%, recall 88.70%,
+healthy false alarms 17.10%. Fresh external validation remains necessary.
+
+PROJECT FOLDERS
+models, data, utils - model and data-processing code
+configs - training settings
+scripts - training, evaluation and prediction commands
+demo - example images and scoring configuration
+results - weights and measured experiments
+datasets - training data and pretrained backbone
+tests - software regression checks
+report - research documentation and source archive
+Presentation - presentation PDF
+outputs - generated predictions and figures
+
+See ATTRIBUTION.txt for the original research and source credits.
+
+GITHUB CODE EDITION
+This repository excludes trained weights, full datasets and virtual environments.
+For inference, obtain the three weight files from the owner's portable package:
+results/paddy_full/ica/models/ica.pth
+results/paddy_full/grainad/models/grain/ckpt.pth
+datasets/torch-cache/hub/checkpoints/wide_resnet50_2-95faca4d.pth
+Place them at these paths before running the demo.
+The dataset is noncommercial CC BY-NC-SA 4.0; see ATTRIBUTION.txt.

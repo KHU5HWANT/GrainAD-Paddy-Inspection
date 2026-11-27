@@ -1,0 +1,66 @@
+{
+  "protocol": "Retrospective stratified 50/50 split of the previously inspected test-image set; not a pristine external test.",
+  "seed": 2026,
+  "target_calibration_recall": 0.9,
+  "calibration_n": 2000,
+  "audit_n": 2000,
+  "threshold": -2.0141096115112305,
+  "checkpoint_sha256": "de860596e0ad7842e593ea1702da9578e0944fb13ff41b202c903f8764e12e0c",
+  "calibration": {
+    "auroc": 0.8991460000000001,
+    "average_precision": 0.9083472423089215,
+    "accuracy": 0.7755,
+    "precision": 0.7205764611689351,
+    "recall": 0.9,
+    "f1": 0.8003557136505114,
+    "false_positive_rate": 0.349,
+    "confusion_matrix": [
+      [
+        651,
+        349
+      ],
+      [
+        100,
+        900
+      ]
+    ]
+  },
+  "audit_default": {
+    "auroc": 0.896863,
+    "average_precision": 0.9039563703125886,
+    "accuracy": 0.6805,
+    "precision": 0.9712793733681462,
+    "recall": 0.372,
+    "f1": 0.5379609544468547,
+    "false_positive_rate": 0.011,
+    "confusion_matrix": [
+      [
+        989,
+        11
+      ],
+      [
+        628,
+        372
+      ]
+    ]
+  },
+  "audit_calibrated": {
+    "auroc": 0.896863,
+    "average_precision": 0.9039563703125886,
+    "accuracy": 0.7825,
+    "precision": 0.7291159772911597,
+    "recall": 0.899,
+    "f1": 0.8051948051948052,
+    "false_positive_rate": 0.334,
+    "confusion_matrix": [
+      [
+        666,
+        334
+      ],
+      [
+        101,
+        899
+      ]
+    ]
+  }
+}

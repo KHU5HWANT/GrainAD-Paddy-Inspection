@@ -1,0 +1,26 @@
+[
+  {
+    "label": 1,
+    "case": "Detected defect",
+    "cached_score": -1.532850980758667,
+    "file": "demo/samples/example_1.png"
+  },
+  {
+    "label": 0,
+    "case": "Correctly accepted healthy",
+    "cached_score": -2.3899447917938232,
+    "file": "demo/samples/example_2.png"
+  },
+  {
+    "label": 1,
+    "case": "Missed defect",
+    "cached_score": -2.83538818359375,
+    "file": "demo/samples/example_3.png"
+  },
+  {
+    "label": 0,
+    "case": "False alarm",
+    "cached_score": -1.880964756011963,
+    "file": "demo/samples/example_4.png"
+  }
+]

@@ -1,0 +1,15 @@
+.venv*/
+__pycache__/
+*.pyc
+.pytest_cache/
+.idea/
+datasets/
+results/
+outputs/
+output/
+tmp/
+*.pth
+*.pt
+*.zip
+.env
+.env.*

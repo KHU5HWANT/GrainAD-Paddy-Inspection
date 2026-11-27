@@ -1,0 +1,18 @@
+batch_size: 16
+resize: [224, 224]
+imagesize: [224, 224]
+num_workers: 0
+mixed_precision: 'no'
+gradient_accumulation_steps: 1
+save_dir: results/ica
+train_data_dir: ./datasets/grain
+anomaly_source_path: ./datasets/dtd/images
+#train_data_dir: /media/huzhiguang/实验数据/Windows/WorkSpace/AD/Grain0726
+#anomaly_source_path: /media/huzhiguang/Work/WorkSpace/Project/Python/Dataset/General/Classification/DTD/dtd/images
+lr: 0.0001
+num_train_epochs: 50
+validation_epochs: 10
+padding: 0
+classname: 'soybean'
+
+generate_anomalies: false

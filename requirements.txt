@@ -1,0 +1,15 @@
+# Python 3.10-3.12 (imgaug requires NumPy 1.x)
+torch>=2.2
+torchvision>=0.17
+numpy>=1.24,<2
+scipy>=1.10
+scikit-learn>=1.3
+pillow>=10
+opencv-python>=4.8,<4.12
+hydra-core>=1.3
+accelerate>=0.28
+tensorboard>=2.15
+imgaug==0.4.0
+matplotlib>=3.7
+pytest>=8
+pandas>=2.0,<3

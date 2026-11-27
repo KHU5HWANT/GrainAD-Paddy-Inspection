@@ -1,0 +1,29 @@
+{
+  "dataset": "Paddy test-image",
+  "samples": 4000,
+  "normal": 2000,
+  "defective": 2000,
+  "image_auroc": 0.89792575,
+  "average_precision": 0.906052192717683,
+  "threshold": 0,
+  "threshold_note": "Uncalibrated default negative-logit cutoff; not selected on test data.",
+  "accuracy": 0.683,
+  "precision": 0.9765625,
+  "recall": 0.375,
+  "f1": 0.541907514450867,
+  "confusion_matrix": [
+    [
+      1982,
+      18
+    ],
+    [
+      1250,
+      750
+    ]
+  ],
+  "seconds": 327.71035710000433,
+  "kernels_per_second": 12.205900464657445,
+  "device": "cuda",
+  "pixel_metrics": "not evaluated",
+  "checkpoint_sha256": "de860596e0ad7842e593ea1702da9578e0944fb13ff41b202c903f8764e12e0c"
+}

@@ -1,0 +1,235 @@
+from pathlib import Path
+import json,shutil
+root=Path('.');r=json.loads((root/'results/paddy_full/calibration/threshold.json').read_text())
+source=r'''\documentclass[11pt,a4paper]{article}
+\usepackage[margin=22mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,lmodern,graphicx,booktabs,longtable,array,xcolor,hyperref,fancyhdr,enumitem}
+\definecolor{navy}{HTML}{173047}
+\definecolor{teal}{HTML}{007F86}
+\definecolor{muted}{HTML}{526777}
+\hypersetup{colorlinks=true,urlcolor=teal,linkcolor=navy}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\textcolor{muted}{GrainAD / Paddy inspection}}
+\fancyhead[R]{\small\textcolor{muted}{Implementation report}}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14pt}
+\newcommand{\code}[1]{\texttt{\small\detokenize{#1}}}
+\newcommand{\fig}[2]{\IfFileExists{images/#1}{\begin{center}\includegraphics[width=\linewidth]{images/#1}\\{\small\textcolor{muted}{#2}}\end{center}}{}}
+\begin{document}
+\thispagestyle{empty}
+{\color{teal}\large IMPLEMENTATION \& EVALUATION}\par
+\vspace{7mm}
+{\color{navy}\Huge\bfseries GrainAD}\par
+{\color{navy}\LARGE Five-view Paddy anomaly detection}\par
+\vspace{5mm}
+{\large From a research baseline to a reproducible laptop demonstration}\par
+\vspace{7mm}
+\textbf{Project:} Local extension of GrainNet/GrainBrain\par
+\textbf{Report date:} 2 November 2026\par
+\textbf{Hardware:} NVIDIA RTX 4050 Laptop GPU, 6 GB VRAM\par
+\vspace{5mm}
+\hrule\vspace{4mm}
+\textbf{What was delivered.} A repaired five-view training pipeline, trained Paddy checkpoints, GPU benchmarks, pause/resume support, independent checkpoint evaluation, retrospective threshold calibration, labeled heatmap demonstrations, and a portable Windows prediction package.
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+\textbf{89.79\%} & \textbf{89.9\%} & \textbf{6,000}\\
+Image AUROC & Calibrated defect recall & Healthy training PNGs\\
+4,000-image test-image set & Separate 2,000-image audit half & Five views per source image\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Read the trade-off.} On the same audit half, threshold calibration raised recall from 37.2\% to 89.9\%, but increased the healthy-grain false-positive rate from 1.1\% to 33.4\%. The weights and AUROC did not change. This is a useful research demonstration, not a deployment-ready grain rejection system.
+
+\textbf{Evidence boundary.} No controlled, matched run of the unmodified upstream repository was performed. Consequently, this report does not attribute an AUROC gain to individual code changes. It distinguishes implementation repairs from measured changes in the decision threshold. The audit split is retrospective: its parent test set had already been inspected during development.
+
+\vfill
+\small Source repository: \url{https://github.com/GrainNet/GrainBrain}\\
+Upstream commit: \code{c8ffa2039596e3212cf9becf3731064e5a7d3c81}\\
+Method reference: GrainBrain: Multiview Identification and Stratification of Defective Grain Kernels, IEEE Transactions on Industrial Informatics, 2025, DOI: 10.1109/TII.2025.3528555.
+\newpage
+\section{System and training flow}
+Each Paddy source PNG contains five horizontally concatenated camera views. The loader splits the strip into five views, resizes each to $224\times224$, converts to a tensor, and applies ImageNet normalization. The sampled real image layout was visually verified before training.
+
+\begin{center}
+\fbox{\parbox{0.91\linewidth}{\centering
+\textbf{Healthy five-view image}\\[3pt]
+$\downarrow$\\
+Rotation STN $\rightarrow$ frozen WideResNet50 (layers 2 and 3)\\[3pt]
+$\downarrow$\\
+Patch aggregation $\rightarrow$ trainable linear feature adapter\\[3pt]
+$\downarrow$\\
+Normal features + texture-synthetic features + Gaussian-synthetic features\\[3pt]
+$\downarrow$\\
+Patch classifier + supervised contrastive objective\\[3pt]
+$\downarrow$\\
+Anomaly score, aligned anomaly map, and saved weights
+}}
+\end{center}
+
+\textbf{Stage 1: alignment.} The baseline rotation-only spatial transformer predicts an affine sampling grid. Its loss compares transformed views of the same kernel using mean squared error. Original views alone are sufficient; texture synthesis is disabled in this stage. Adam updates only STN parameters.
+
+\textbf{Stage 2: anomaly detection.} The STN and ImageNet-pretrained backbone are frozen. Local $3\times3$ feature neighborhoods from layers 2 and 3 are aligned and pooled to 1,536-dimensional patch representations. A single linear adapter and a two-layer classifier are trained. Synthetic image defects use DTD texture blends and Perlin masks. Synthetic feature defects add Gaussian noise with standard deviation 0.015.
+
+\[
+\mathcal{L}=0.5\mathcal{L}_{\mathrm{BCE}}+0.5\mathcal{L}_{\mathrm{SCL}}.
+\]
+
+The classifier outputs normality logits: original healthy patches have target 1, noisy features target 0, and texture-augmented patches target $1-\text{mask}$. Contrastive positives share a kernel identity and exclude self-pairs. Following the baseline representation, complete spatial view features are flattened for contrastive learning. Temperature 0.1 and separate per-kernel synthetic groups are implementation choices where the paper does not fully specify details.
+
+\textbf{Inference.} Synthetic branches are removed. The anomaly score is the maximum negative normality logit over all patches and all views of one kernel. Maps are interpolated and smoothed with Gaussian $\sigma=4$. Displayed overlays use aligned views; they are not mapped back to the raw camera coordinates. Scores and heatmap colors are not probabilities.
+
+\section{Data, environment, and executed experiment}
+\begin{tabular}{p{0.43\linewidth}p{0.49\linewidth}}
+\toprule
+Item & Executed setting\\\midrule
+Training & 6,000 healthy Paddy PNGs; all used\\
+Evaluation & 2,000 healthy + 2,000 defective test-image PNGs\\
+DTD textures & 5,640 images from the tanganke/dtd mirror\\
+Alignment & 50 epochs; batch 2; Adam $10^{-4}$\\
+GrainAD & 50 epochs; batch 4; Adam $2\times10^{-4}$\\
+Loss weights & BCE 0.5; SCL 0.5\\
+Data workers & 2, with Windows-compatible initialization\\
+Runtime & Python 3.12; PyTorch 2.9.1+cu126; torchvision 0.24.1\\
+Training hardware & RTX 4050 Laptop GPU, 6 GB\\
+\bottomrule
+\end{tabular}
+
+The GPU environment replaced the initial CPU-only PyTorch installation. Only Paddy was extracted for training because simultaneous extraction of all four grain archives exceeded the available disk space. The official DTD endpoint was unreachable; mirror parquet downloads were verified against their published SHA-256 identifiers, and all exported images were decoded/verified. Provenance is retained in \code{datasets/dtd/SOURCE.json}.
+
+The full run started on 31 October 2026 at approximately 00:59 IST and finished on 1 November at 08:01 IST: about 31 hours wall-clock including an early migration/restart. The paper uses a different batch configuration; this local run prioritizes fitting the 6 GB GPU. The authors' reported test-pixel protocol was not reproduced: this run reports image-level performance on test-image only.
+
+\textbf{One-time migration.} Pause/resume support was added during alignment. We retained weights from two completed epochs, restarted the unfinished third epoch, and reset Adam once because the old process had not saved optimizer state. Later checkpoints retain optimizer and scheduler states. This deviation is part of the experimental record.
+
+\section{Changes relative to the original repository}
+The original repository already provided the backbone, STN, synthetic anomaly generation, adapter, classifier, and much of the training pipeline. They were extended and corrected, not invented anew. The following inventory covers the substantive changes made in this project.
+
+\small
+\begin{longtable}{p{0.22\linewidth}p{0.34\linewidth}p{0.35\linewidth}}
+\toprule
+\textbf{Files / area} & \textbf{Original behavior} & \textbf{Change and intended benefit}\\\midrule\endhead
+\code{configs/train_src.yaml}; model config & Defaults selected a SimpleNet ablation, disabled alignment, and used machine-specific paths. & Enabled five-view GrainAD, alignment and both anomaly sources; portable paths, zero padding, 50 stage-2 epochs, one training pass/epoch, equal loss weights.\\
+\code{models/loss.py} & Contrastive loss included self-pairs and directly exponentiated similarities. & Excluded diagonal entries; log-sum-exp normalization; device-safe labels; differentiable zero for anchors without positives. Verified against a manual loss calculation.\\
+\code{models/simplenet.py}; contrastive grouping & Modulo-five labels did not correctly track kernel identity for arbitrary batch sizes. & Labels follow kernel IDs in view-major order; augmented labels are transposed to match feature order. Synthetic anomalies form a separate group per kernel.\\
+\code{scripts/train_ica.py} & Random pairing could compare different grains. & Pair views within the same kernel. Disable DTD generation for alignment, avoiding unnecessary synthesis.\\
+\code{models/ICA.py} & Rotation path used GPU-specific device lookup; sampling convention implicit. & Use the input tensor's device; explicit \code{align_corners=False}. CPU identity/gradient tests added.\\
+\code{models/simplenet.py}; masks & Masks could be on the wrong device; unrestricted squeeze could remove the batch dimension. & Move masks to the model device; nearest-neighbor warping; preserve batch dimension with \code{squeeze(1)}.\\
+\code{data/grain.py} & Randomly required fixed counts of 200 training, 20 healthy test, and 180 defective test images. & Use all supplied images in sorted order; clear missing-data errors; correct anomaly labels and mask metadata; RGB conversion.\\
+\code{data/grain.py}; masks & Five-view mask resizing used a smoothing interpolation. & Nearest-neighbor interpolation preserves binary labels.\\
+\code{data/grain.py}; Windows workers & imgaug color lookup cache was missing after process spawning. & Worker initializer restores the process-local cache, seeds Python/NumPy/imgaug, and limits OpenCV threads.\\
+\code{models/simplenet.py}; optimization & Adapter learning rate and loss weighting differed from the intended settings. & Adam at $2\times10^{-4}$ for adapter/classifier; explicit backbone/STN freezing; BCE/SCL weights 0.5 each.\\
+\code{models/simplenet.py}; inference & Selected one view using its whole-batch mean score. & Compute the maximum separately for every kernel across views. Regression test catches mixed-batch errors.\\
+\code{models/simplenet.py}; evaluation & Image-only evaluation retained unnecessary maps; metric handling assumed masks. & Retain scalar scores when masks are not requested; skip unavailable pixel metrics; guard score normalization against zero range.\\
+\code{models/simplenet.py}; checkpoints & Saved state was tied to the best observed test result. & Save final/latest weights independently of held-out score selection. Historical best remains a diagnostic only.\\
+\code{scripts/train_src.py} & Configured device could disagree with Accelerator; unsupported STN input combinations were possible. & Use Accelerator's device and reject concatenated-input STN mode. Remove global TLS verification bypass from both training scripts.\\
+\code{utils/training_state.py}; training scripts & Prediction weights only; restarting lost optimizer and epoch position. & Atomic training-state snapshots include weights, Adam, epoch, scheduler where applicable, and main-process RNG. Cooperative pause after an epoch.\\
+\code{scripts/run_paddy_training.py} & No sequential, logged local controller. & Run both stages, write logs/status, stop on failure, resume completed stages, and lock against duplicate new controllers.\\
+\code{scripts/benchmark_training.py} & No local measured sizing workflow. & Warmed real-data batch benchmarks and GPU-memory measurements used to select feasible batches.\\
+\code{scripts/evaluate_paddy.py} & No independent per-image final-checkpoint report. & Evaluate 4,000 images; export predictions, metrics, throughput, and checkpoint digest.\\
+\code{utils/calibration.py}; calibration script & Raw zero cutoff had low defect recall. & Select a 90\%-recall cutoff only on a calibration half; report unchanged-weight results on a disjoint audit half.\\
+\code{scripts/predict_grainad.py}; demo script & No standalone portable prediction workflow. & Prediction NPZ output plus labeled visual panels, scores, saved threshold and checkpoint-digest validation.\\
+\code{tests/}; requirements; README & Limited verification and setup guidance. & Regression tests, compatible dependencies, training/pause instructions, provenance and portable pen-drive bundle.\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+These changes address correctness, stability, portability, and observability. They do not establish that each repair independently improved anomaly-detection accuracy. That would require matched baseline and ablation runs with controlled seeds and identical data.
+
+\section{Measured final-checkpoint performance}
+The saved final epoch was independently evaluated on all 4,000 test-image samples. The fresh AUROC of 0.89792575 closely matches the training report's 0.897941625; tiny numerical differences can arise from batching. No retraining occurred during this evaluation.
+
+\begin{center}\begin{tabular}{lr}
+\toprule
+\textbf{Metric, full test-image set} & \textbf{Result}\\\midrule
+Image AUROC & 89.79\%\\
+Average precision & 90.61\%\\
+Accuracy at raw cutoff 0 & 68.30\%\\
+Defect precision at cutoff 0 & 97.66\%\\
+Defect recall at cutoff 0 & 37.50\%\\
+F1 at cutoff 0 & 54.19\%\\
+Healthy correctly accepted / falsely flagged & 1,982 / 18\\
+Defective detected / missed & 750 / 1,250\\
+End-to-end evaluation throughput & 12.21 kernels/s\\
+\bottomrule
+\end{tabular}\end{center}
+
+Throughput includes loading and GPU batching on this laptop; it is not a deployment latency guarantee. AUROC describes ranking, not classification accuracy. The final zero-cutoff decision rule missed too many defects for reliable rejection.
+
+\fig{history.png}{Historical test-image scores were repeatedly inspected. The earlier peak of 92.43\% is not the performance of the final saved model.}
+
+\section{Improvement without retraining: threshold calibration}
+We sorted the stored image records and made one stratified 50/50 split with random seed 2026. Each half contains 1,000 healthy and 1,000 defective images. Only the calibration half was used to choose the cutoff. The rule selects the highest observed positive-score threshold that achieves at least 90\% defect recall on that half, using the decision $s\geq t$.
+
+The resulting cutoff is $t=-2.0141096$. It is tied to the final checkpoint by a SHA-256 digest. This is threshold selection, not probability calibration.
+
+\begin{center}\begin{tabular}{lrr}
+\toprule
+\textbf{Same 2,000-image audit half} & \textbf{Default $t=0$} & \textbf{Calibrated $t=-2.0141$}\\\midrule
+AUROC & 89.69\% & 89.69\%\\
+Accuracy & 68.05\% & 78.25\%\\
+Defect precision & 97.13\% & 72.91\%\\
+Defect recall & 37.20\% & 89.90\%\\
+F1 & 53.80\% & 80.52\%\\
+Healthy false-positive rate & 1.10\% & 33.40\%\\
+Detected defects / 1,000 & 372 & 899\\
+Missed defects / 1,000 & 628 & 101\\
+Healthy falsely flagged / 1,000 & 11 & 334\\
+\bottomrule
+\end{tabular}\end{center}
+
+The observed recall improvement is \textbf{52.7 percentage points}, and F1 improves by \textbf{26.72 percentage points}. However, false alarms increase by 32.3 percentage points and precision decreases. The calibrated mode is therefore presented as \emph{flag for review}, not automatic rejection. The score ranking and weights are unchanged.
+
+\fig{performance.png}{Retrospective audit results. Calibration images did not select or tune any audit metric.}
+\fig{confusion.png}{Actual rows and predicted columns; each audit class contains 1,000 images.}
+
+\textbf{Important limitation.} The original test-image set had already been evaluated throughout training and reviewed during development. Splitting cached scores afterward does not create a pristine external test. These measurements are development evidence. A new, independently collected dataset is required for a strong final generalization claim. View strips are kept intact, but this analysis does not independently establish acquisition-session or near-duplicate isolation.
+
+\section{Visual demonstration and sharing}
+The demonstration includes a detected defect, a correctly accepted healthy sample, a missed defect and a false alarm. For each available case, the first matching filename in the sorted audit subset was selected. This is a deliberately curated explanatory gallery, not a representative random sample or another accuracy estimate.
+
+Each panel shows five aligned views, an anomaly score, the chosen cutoff, a predicted decision, the dataset label, and a relative heatmap. Color normalization is per image for visibility; brightness must not be compared as a probability across panels. No ground-truth pixel-mask evaluation is claimed.
+
+\fig{demo_detected.png}{Example of a detected defect. Dataset labels are shown separately from predictions.}
+\fig{demo_missed.png}{A failure case is included explicitly to make limitations visible.}
+
+The portable package includes code, the three required weight files, demonstration samples, the threshold metadata, generated PNGs and this report. A Windows laptop can view the generated images without Python. To run fresh predictions, install Python 3.12 and execute the included setup script once with internet access; then run the demo on CPU or a compatible GPU. Training data and DTD are not required for prediction. Input images must match the five-view Paddy format.
+
+\section{Reproducibility, tests, and next steps}
+\textbf{Saved artifacts.}
+\begin{itemize}[leftmargin=*]
+\item \code{results/paddy_full/ica/models/ica.pth}: alignment prediction weights.
+\item \code{results/paddy_full/grainad/models/grain/ckpt.pth}: adapter/classifier prediction weights.
+\item \code{datasets/torch-cache/hub/checkpoints/wide_resnet50_2-95faca4d.pth}: ImageNet backbone.
+\item \code{training_state.pth} beside each stage's weights: resumable state.
+\item \code{results/paddy_full/evaluation/}: full-set metrics and per-image scores.
+\item \code{results/paddy_full/calibration/}: threshold, fixed split manifest and gallery selection.
+\item \code{demo/}: portable threshold metadata and demonstration inputs.
+\end{itemize}
+
+Final adapter/classifier SHA-256:\\
+{\scriptsize\texttt{de860596e0ad7842e593ea1702da9578e0944fb13ff41b202c903f8764e12e0c}}
+
+\textbf{Validation scope.} Tests cover contrastive arithmetic and gradients, view-major labels, CPU STN identity/gradients, per-kernel view scoring, frozen-backbone updates, checkpoint round trips, small-dataset augmentation, texture-free alignment loading, image-only map retention, Windows augmentation cache initialization, atomic-write preservation, optimizer continuity, pause flags, epoch continuation, and threshold-selection edge cases. These tests establish software behavior, not production safety or paper-level accuracy reproduction.
+
+\textbf{Remaining work.} Collect a fresh validation/test split; investigate unstable training with matched ablations; choose an operational false-rejection budget; measure pixel localization against masks; assess new camera conditions and grains; benchmark deployment hardware. Fine-tuning may help, but was not performed for the calibration improvement described here. The current Paddy weights should not be assumed to generalize to other grain categories.
+
+\textbf{What can honestly be presented.} A full five-view anomaly-detection pipeline trained on a laptop GPU; robust pause/resume engineering; 89.79\% final image AUROC on the provided test-image set; and a transparent, reproducible threshold experiment that catches more defects at a documented false-alarm cost.
+
+\section*{References and provenance}
+\begin{enumerate}[leftmargin=*]
+\item GrainNet/GrainBrain source: \url{https://github.com/GrainNet/GrainBrain}.
+\item GrainBrain paper, IEEE TII (2025): \url{https://doi.org/10.1109/TII.2025.3528555}.
+\item Dataset and author protocol: \url{https://grainnet.github.io/GrainBrain.html}.
+\item DTD official project: \url{https://www.robots.ox.ac.uk/~vgg/data/dtd/}.
+\item DTD mirror used locally: \url{https://huggingface.co/datasets/tanganke/dtd}.
+\end{enumerate}
+Respect upstream code, weights and dataset terms when redistributing. This report does not grant new rights to the supplied assets.
+\end{document}
+'''
+(root/'report/main.tex').write_text(source,encoding='utf-8')

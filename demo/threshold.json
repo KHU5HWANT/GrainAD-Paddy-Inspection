@@ -1,0 +1,27 @@
+{
+  "aggregation": "global_top_5pct",
+  "fraction": 0.05,
+  "threshold": -3.505190372467041,
+  "checkpoint_sha256": "de860596e0ad7842e593ea1702da9578e0944fb13ff41b202c903f8764e12e0c",
+  "protocol": "Fixed retrospective calibration/audit split; no retraining. Includes maximum baseline and 12 predeclared alternatives. Selection: calibration FPR at >=90% recall, tie-break AUROC then name. Audit is development evidence, not fresh external validation.",
+  "calibration": {
+    "auroc": 0.9552520000000001,
+    "accuracy": 0.8845,
+    "recall": 0.9,
+    "precision": 0.8729388942774006,
+    "f1": 0.8862629246676514,
+    "false_positive_rate": 0.131,
+    "detected": 900,
+    "false_alarms": 131
+  },
+  "audit": {
+    "auroc": 0.9439829999999999,
+    "accuracy": 0.858,
+    "recall": 0.887,
+    "precision": 0.8383742911153119,
+    "f1": 0.8620019436345967,
+    "false_positive_rate": 0.171,
+    "detected": 887,
+    "false_alarms": 171
+  }
+}
